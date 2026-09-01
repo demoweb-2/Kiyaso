@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Anton&family=Dancing+Script:wght@600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background-color: #0A0A0B;
+    color: #F6F6F7;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background-color: #C8102E;
+    color: white;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-600 text-white font-semibold rounded-xl transition-all duration-300 hover:bg-brand-700 hover:shadow-premium active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-charcoal-900 font-semibold rounded-xl transition-all duration-300 hover:bg-charcoal-100 active:scale-95;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-white/20 text-white font-semibold rounded-xl transition-all duration-300 hover:border-white/40 hover:bg-white/5 active:scale-95;
+  }
+
+  .card {
+    @apply bg-charcoal-800 rounded-2xl overflow-hidden border border-white/5 transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply hover:border-white/10 hover:shadow-card hover:-translate-y-1;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-charcoal-900 border border-white/10 rounded-xl text-white placeholder:text-charcoal-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all duration-200;
+  }
+
+  .section-label {
+    @apply inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-brand-500;
+  }
+
+  .glass {
+    @apply bg-white/5 backdrop-blur-lg border border-white/10;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Shimmer skeleton */
+  .shimmer {
+    background: linear-gradient(90deg, #1C1C1F 25%, #2A2A2E 50%, #1C1C1F 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s linear infinite;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .text-shadow-lg {
+    text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  .text-shadow-glow {
+    text-shadow: 0 0 40px rgba(200, 16, 46, 0.4), 0 4px 24px rgba(0, 0, 0, 0.6);
+  }
+
+  .perspective {
+    perspective: 1000px;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #121214;
+}
+::-webkit-scrollbar-thumb {
+  background: #3D3D42;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C8102E;
+}
