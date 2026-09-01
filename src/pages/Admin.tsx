@@ -459,19 +459,19 @@ function Orders() {
             <DetailRow label="Status" value={selected.status} />
             <DetailRow label="Submitted" value={new Date(selected.created_at).toLocaleString()} />
             <div className="pt-2">
-              <p className="text-charcoal-500 text-xs uppercase tracking-wide mb-2">Items</p>
+              <p className="text-charcoal-500 text-xs font-semibold uppercase tracking-[0.1em] mb-3">Items</p>
               <div className="space-y-2">
                 {selected.items.map((item, i) => (
-                  <div key={i} className="flex justify-between bg-charcoal-900 rounded-lg p-2">
-                    <span className="text-white text-sm">{item.name} x{item.quantity}</span>
-                    <span className="text-brand-500 text-sm font-semibold">Rs. {(item.price * item.quantity).toLocaleString()}</span>
+                  <div key={i} className="flex justify-between items-center bg-charcoal-900 rounded-xl px-4 py-3">
+                    <span className="text-white text-sm font-medium">{item.name} <span className="text-charcoal-400">x{item.quantity}</span></span>
+                    <span className="text-brand-500 text-sm font-bold">Rs. {(item.price * item.quantity).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="flex justify-between pt-2 border-t border-white/10">
-              <span className="text-white font-bold">Total</span>
-              <span className="text-brand-500 font-bold">Rs. {Number(selected.total).toLocaleString()}</span>
+            <div className="flex justify-between items-center pt-4 mt-4 border-t border-white/10">
+              <span className="text-white font-bold text-base">Total</span>
+              <span className="text-brand-500 font-bold text-lg">Rs. {Number(selected.total).toLocaleString()}</span>
             </div>
           </div>
         </DetailModal>}
@@ -1179,30 +1179,41 @@ function CateringManagement() {
 function DetailModal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[90%] max-w-lg max-h-[80vh] overflow-y-auto bg-charcoal-800 border border-white/10 rounded-2xl shadow-2xl p-6"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-xl text-white">{title}</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10">
-            <X className="w-4 h-4 text-white" />
-          </button>
-        </div>
-        {children}
-      </motion.div>
+      <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="relative w-full max-w-[800px] max-h-[90vh] flex flex-col bg-charcoal-800 border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+        >
+          {/* Fixed header with close button */}
+          <div className="sticky top-0 z-10 flex items-center justify-between px-6 sm:px-8 py-5 bg-charcoal-800/95 backdrop-blur-lg border-b border-white/10">
+            <h2 className="font-display text-xl sm:text-2xl text-white tracking-wide">{title}</h2>
+            <button
+              onClick={onClose}
+              className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-brand-600 hover:text-white transition-all duration-200 group"
+            >
+              <X className="w-5 h-5 text-charcoal-300 group-hover:text-white" />
+            </button>
+          </div>
+
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6">
+            {children}
+          </div>
+        </motion.div>
+      </div>
     </>
   );
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-0.5 pb-2 border-b border-white/5">
-      <span className="text-charcoal-500 text-xs uppercase tracking-wide">{label}</span>
-      <span className="text-white">{value}</span>
+    <div className="flex flex-col gap-1 pb-4 mb-4 border-b border-white/5 last:border-0 last:mb-0">
+      <span className="text-charcoal-500 text-xs font-semibold uppercase tracking-[0.1em]">{label}</span>
+      <span className="text-white text-sm sm:text-base leading-relaxed break-words">{value}</span>
     </div>
   );
 }
