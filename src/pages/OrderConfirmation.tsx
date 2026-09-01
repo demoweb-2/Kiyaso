@@ -1,6 +1,6 @@
 import { useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircle, Clock, Phone, ArrowRight } from 'lucide-react';
+import { CheckCircle, Clock, Phone, ArrowRight, MapPin } from 'lucide-react';
 
 export default function OrderConfirmation() {
   const location = useLocation();
@@ -32,7 +32,10 @@ export default function OrderConfirmation() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link to="/menu" className="btn-primary">Order More <ArrowRight className="w-4 h-4" /></Link>
+          <Link to={`/track-order/${orderNumber}`} className="btn-primary">
+            Track Your Order <ArrowRight className="w-4 h-4" />
+          </Link>
+          <Link to="/menu" className="btn-outline">Order More</Link>
           <a href="tel:+94812345678" className="btn-outline">
             <Phone className="w-4 h-4" /> Call Us
           </a>

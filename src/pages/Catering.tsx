@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { CheckCircle, User, Phone, Mail, Calendar, Users, MessageSquare } from 'lucide-react';
-import { createCateringInquiry } from '@/lib/data';
+import { CheckCircle, User, Phone, Mail, Calendar, Users, MessageSquare, Trash2 } from 'lucide-react';
+import { createCateringInquiry, cancelCateringInquiry } from '@/lib/data';
+import type { CateringInquiry } from '@/types';
 
 const schema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -12,7 +13,7 @@ const schema = z.object({
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   event_type: z.string().min(1, 'Please select event type'),
   event_date: z.string().optional(),
-  guest_count: z.coerce.number().optional(),
+  guest_count: z.number().optional(),
   message: z.string().min(5, 'Please tell us about your event'),
 });
 
@@ -29,21 +30,50 @@ const eventTypes = ['Wedding', 'Corporate Event', 'Birthday Party', 'Family Gath
 export default function Catering() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [inquiryId, setInquiryId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   const onSubmit = async (data: FormData) => {
     setError('');
     try {
-      await createCateringInquiry({
+      const inquiry: CateringInquiry = await createCateringInquiry({
         name: data.name, phone: data.phone, email: data.email || null,
         event_type: data.event_type, event_date: data.event_date || null,
         guest_count: data.guest_count || null, message: data.message,
       });
+      setInquiryId(inquiry.id);
       setSubmitted(true);
     } catch {
       setError('Something went wrong. Please try again.');
     }
+  };
+
+  const FIVE_MIN = 5 * 60 * 1000;
+  const canCancel = inquiryId && elapsed < FIVE_MIN;
+  const remainingMs = FIVE_MIN - elapsed;
+  const remainingMin = Math.floor(remainingMs / 60000);
+  const remainingSec = Math.floor((remainingMs % 60000) / 1000);
+
+  useEffect(() => {
+    if (!submitted || !inquiryId) return;
+    const start = Date.now();
+    const interval = setInterval(() => setElapsed(Date.now() - start), 1000);
+    return () => clearInterval(interval);
+  }, [submitted, inquiryId]);
+
+  const handleCancel = async () => {
+    if (!inquiryId) return;
+    if (!confirm('Cancel this inquiry? This cannot be undone.')) return;
+    setCancelling(true);
+    try {
+      await cancelCateringInquiry(inquiryId);
+      setSubmitted(false);
+      setInquiryId(null);
+      setElapsed(0);
+    } finally { setCancelling(false); }
   };
 
   return (
@@ -115,7 +145,15 @@ export default function Catering() {
               <CheckCircle className="w-16 h-16 text-accent-green mx-auto mb-4" />
               <h3 className="font-display text-2xl text-white mb-2">INQUIRY SENT!</h3>
               <p className="text-charcoal-300 mb-6">We'll get back to you within 24 hours to discuss your event.</p>
-              <button onClick={() => setSubmitted(false)} className="btn-primary">New Inquiry</button>
+              {canCancel && (
+                <div className="mb-6">
+                  <p className="text-accent-orange text-sm mb-3">Cancel within {remainingMin}m {remainingSec}s</p>
+                  <button onClick={handleCancel} disabled={cancelling} className="btn-primary disabled:opacity-50">
+                    <Trash2 className="w-4 h-4" /> {cancelling ? 'Cancelling...' : 'Cancel Inquiry'}
+                  </button>
+                </div>
+              )}
+              <button onClick={() => { setSubmitted(false); setInquiryId(null); setElapsed(0); }} className="btn-outline">New Inquiry</button>
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="card p-6 md:p-8 space-y-5">

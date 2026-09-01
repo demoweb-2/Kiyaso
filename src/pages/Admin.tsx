@@ -4,11 +4,13 @@ import {
   LayoutDashboard, ShoppingBag, CalendarCheck, UtensilsCrossed, Building2,
   Image as ImageIcon, Tag, Star, Briefcase, Settings as SettingsIcon, BarChart3, Menu as MenuIcon, X,
   TrendingUp, Clock, Users, DollarSign, Plus, Edit2, Trash2, Search, Flame, Check, ArrowLeft,
-  Facebook, Instagram, Youtube, Music, MessageCircle, LogOut, Lock,
+  Facebook, Instagram, Youtube, Music, MessageCircle, LogOut, Lock, Bell, Eye,
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
+import { useToast } from '@/components/Toast';
 import {
   fetchOrders, updateOrderStatus, fetchReservations, updateReservationStatus,
+  fetchCateringInquiries, fetchCareerApplications,
   fetchMenuItems, createMenuItem, updateMenuItem, deleteMenuItem,
   fetchCategories, createCategory, updateCategory, deleteCategory,
   fetchBranches, createBranch, updateBranch, deleteBranch,
@@ -21,9 +23,9 @@ import { supabase } from '@/lib/supabase';
 import { useRealtimeTable } from '@/hooks/useRealtimeTable';
 import { useSettings } from '@/hooks/useSettings';
 import ImageUpload from '@/components/ImageUpload';
-import type { Order, Reservation, MenuItem, Category, Branch, GalleryItem, Offer, Testimonial, Settings as SettingsType } from '@/types';
+import type { Order, Reservation, MenuItem, Category, Branch, GalleryItem, Offer, Testimonial, Settings as SettingsType, CateringInquiry, CareerApplication } from '@/types';
 
-type Tab = 'dashboard' | 'orders' | 'reservations' | 'menu' | 'categories' | 'branches' | 'gallery' | 'offers' | 'testimonials' | 'careers' | 'settings';
+type Tab = 'dashboard' | 'orders' | 'reservations' | 'menu' | 'categories' | 'branches' | 'gallery' | 'offers' | 'testimonials' | 'catering' | 'careers' | 'settings';
 
 const tabs: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -35,6 +37,7 @@ const tabs: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'gallery', label: 'Gallery', icon: ImageIcon },
   { id: 'offers', label: 'Offers', icon: Tag },
   { id: 'testimonials', label: 'Testimonials', icon: Star },
+  { id: 'catering', label: 'Catering', icon: UtensilsCrossed },
   { id: 'careers', label: 'Careers', icon: Briefcase },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
@@ -99,6 +102,9 @@ export default function Admin() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [notifications, setNotifications] = useState<{ id: string; message: string; tab: Tab }[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -110,6 +116,45 @@ export default function Admin() {
     });
     return () => { listener.subscription.unsubscribe(); };
   }, []);
+
+  // Live notifications for new submissions
+  useEffect(() => {
+    if (!session) return;
+    const channel = supabase
+      .channel('admin-notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+        const order = payload.new as Order;
+        const notif = { id: `order-${order.id}-${Date.now()}`, message: `New order: ${order.order_number}`, tab: 'orders' as Tab };
+        setNotifications((prev) => [notif, ...prev].slice(0, 20));
+        showToast(`New order received: ${order.order_number}`);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reservations' }, (payload) => {
+        const res = payload.new as Reservation;
+        const notif = { id: `res-${res.id}-${Date.now()}`, message: `New reservation from ${res.name}`, tab: 'reservations' as Tab };
+        setNotifications((prev) => [notif, ...prev].slice(0, 20));
+        showToast(`New reservation from ${res.name}`);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'catering_inquiries' }, (payload) => {
+        const inq = payload.new as CateringInquiry;
+        const notif = { id: `cat-${inq.id}-${Date.now()}`, message: `New catering inquiry from ${inq.name}`, tab: 'catering' as Tab };
+        setNotifications((prev) => [notif, ...prev].slice(0, 20));
+        showToast(`New catering inquiry from ${inq.name}`);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'career_applications' }, (payload) => {
+        const app = payload.new as CareerApplication;
+        const notif = { id: `career-${app.id}-${Date.now()}`, message: `New application from ${app.name}`, tab: 'careers' as Tab };
+        setNotifications((prev) => [notif, ...prev].slice(0, 20));
+        showToast(`New job application from ${app.name}`);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'contact_messages' }, (payload) => {
+        const msg = payload.new as { id: string; name: string };
+        const notif = { id: `msg-${msg.id}-${Date.now()}`, message: `New message from ${msg.name}`, tab: 'dashboard' as Tab };
+        setNotifications((prev) => [notif, ...prev].slice(0, 20));
+        showToast(`New message from ${msg.name}`);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [session, showToast]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -156,6 +201,52 @@ export default function Admin() {
             <h1 className="font-display text-lg text-white">{tabs.find(t => t.id === activeTab)?.label}</h1>
           </div>
           <div className="flex items-center gap-4">
+            <div className="relative">
+              <button onClick={() => setNotifOpen(!notifOpen)} className="relative w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+                <Bell className="w-4 h-4 text-white" />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-brand-600 text-white text-[10px] font-bold flex items-center justify-center">
+                    {notifications.length > 9 ? '9+' : notifications.length}
+                  </span>
+                )}
+              </button>
+              <AnimatePresence>
+                {notifOpen && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setNotifOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute right-0 top-12 z-40 w-72 bg-charcoal-800 border border-white/10 rounded-xl shadow-xl max-h-96 overflow-y-auto"
+                    >
+                      <div className="p-3 border-b border-white/5 flex items-center justify-between">
+                        <p className="text-white font-semibold text-sm">Notifications</p>
+                        {notifications.length > 0 && (
+                          <button onClick={() => setNotifications([])} className="text-charcoal-400 text-xs hover:text-white">Clear</button>
+                        )}
+                      </div>
+                      {notifications.length === 0 ? (
+                        <p className="text-charcoal-400 text-sm p-4 text-center">No notifications</p>
+                      ) : (
+                        <div className="p-2 space-y-1">
+                          {notifications.map((n) => (
+                            <button
+                              key={n.id}
+                              onClick={() => { setActiveTab(n.tab); setNotifOpen(false); setNotifications((prev) => prev.filter((x) => x.id !== n.id)); }}
+                              className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 text-left transition-colors"
+                            >
+                              <div className="w-2 h-2 rounded-full bg-brand-500 shrink-0" />
+                              <p className="text-charcoal-200 text-sm">{n.message}</p>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
             <a href="/" className="flex items-center gap-2 text-charcoal-300 hover:text-white text-sm transition-colors">
               <ArrowLeft className="w-4 h-4" /> View Site
             </a>
@@ -177,6 +268,7 @@ export default function Admin() {
               {activeTab === 'gallery' && <GalleryManagement />}
               {activeTab === 'offers' && <OfferManagement />}
               {activeTab === 'testimonials' && <TestimonialManagement />}
+              {activeTab === 'catering' && <CateringManagement />}
               {activeTab === 'careers' && <CareersManagement />}
               {activeTab === 'settings' && <SettingsManagement />}
             </motion.div>
@@ -296,6 +388,7 @@ function Orders() {
   const { data: orders, loading } = useRealtimeTable<Order>('orders', fetchOrders);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<Order | null>(null);
 
   const filtered = orders.filter((o) => {
     if (filter !== 'all' && o.status !== filter) return false;
@@ -342,6 +435,9 @@ function Orders() {
                 </div>
                 <div className="flex items-center gap-3">
                   <p className="text-brand-500 font-bold">Rs. {Number(order.total).toLocaleString()}</p>
+                  <button onClick={() => setSelected(order)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10">
+                    <Eye className="w-4 h-4 text-white" />
+                  </button>
                   <select value={order.status} onChange={(e) => handleStatusChange(order.id, e.target.value)} className="bg-charcoal-900 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm cursor-pointer focus:outline-none focus:border-brand-500">
                     {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -351,14 +447,42 @@ function Orders() {
           ))}
         </div>
       )}
+      <AnimatePresence>
+        {selected && <DetailModal title={`Order ${selected.order_number}`} onClose={() => setSelected(null)}>
+          <div className="space-y-3 text-sm">
+            <DetailRow label="Customer" value={selected.customer_name} />
+            <DetailRow label="Phone" value={selected.customer_phone} />
+            {selected.customer_email && <DetailRow label="Email" value={selected.customer_email} />}
+            <DetailRow label="Delivery Type" value={selected.delivery_type} />
+            {selected.address && <DetailRow label="Address" value={selected.address} />}
+            {selected.notes && <DetailRow label="Notes" value={selected.notes} />}
+            <DetailRow label="Status" value={selected.status} />
+            <DetailRow label="Submitted" value={new Date(selected.created_at).toLocaleString()} />
+            <div className="pt-2">
+              <p className="text-charcoal-500 text-xs uppercase tracking-wide mb-2">Items</p>
+              <div className="space-y-2">
+                {selected.items.map((item, i) => (
+                  <div key={i} className="flex justify-between bg-charcoal-900 rounded-lg p-2">
+                    <span className="text-white text-sm">{item.name} x{item.quantity}</span>
+                    <span className="text-brand-500 text-sm font-semibold">Rs. {(item.price * item.quantity).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-between pt-2 border-t border-white/10">
+              <span className="text-white font-bold">Total</span>
+              <span className="text-brand-500 font-bold">Rs. {Number(selected.total).toLocaleString()}</span>
+            </div>
+          </div>
+        </DetailModal>}
+      </AnimatePresence>
     </div>
   );
 }
-
-// ============ RESERVATIONS ============
 function Reservations() {
   const { data: reservations, loading } = useRealtimeTable<Reservation>('reservations', fetchReservations);
   const [filter, setFilter] = useState('all');
+  const [selected, setSelected] = useState<Reservation | null>(null);
 
   const filtered = filter === 'all' ? reservations : reservations.filter((r) => r.status === filter);
   const statuses = ['pending', 'approved', 'rejected', 'completed'];
@@ -393,6 +517,9 @@ function Reservations() {
               </div>
               {res.special_requests && <p className="text-charcoal-400 text-xs mb-3">"{res.special_requests}"</p>}
               <div className="flex gap-2">
+                <button onClick={() => setSelected(res)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10">
+                  <Eye className="w-3.5 h-3.5 text-white" />
+                </button>
                 {statuses.map((s) => (
                   <button key={s} onClick={() => handleStatus(res.id, s)} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${res.status === s ? 'bg-brand-600 text-white' : 'bg-charcoal-900 text-charcoal-300 hover:bg-white/5'}`}>
                     {s}
@@ -403,11 +530,24 @@ function Reservations() {
           ))}
         </div>
       )}
+      <AnimatePresence>
+        {selected && <DetailModal title="Reservation Details" onClose={() => setSelected(null)}>
+          <div className="space-y-3 text-sm">
+            <DetailRow label="Name" value={selected.name} />
+            <DetailRow label="Phone" value={selected.phone} />
+            {selected.email && <DetailRow label="Email" value={selected.email} />}
+            <DetailRow label="Date" value={selected.date} />
+            <DetailRow label="Time" value={selected.time} />
+            <DetailRow label="Guests" value={String(selected.guests)} />
+            {selected.special_requests && <DetailRow label="Special Requests" value={selected.special_requests} />}
+            <DetailRow label="Status" value={selected.status} />
+            <DetailRow label="Submitted" value={new Date(selected.created_at).toLocaleString()} />
+          </div>
+        </DetailModal>}
+      </AnimatePresence>
     </div>
   );
 }
-
-// ============ NUMBER INPUT HELPER ============
 function useNumberInput(initial: number | null | undefined) {
   const [value, setValue] = useState<string>(initial != null && initial !== 0 ? String(initial) : '');
   return {
@@ -912,14 +1052,15 @@ function TestimonialForm({ editing, onSave, onCancel }: { editing: Testimonial |
 
 // ============ CAREERS MANAGEMENT ============
 function CareersManagement() {
-  const [applications, setApplications] = useState<{ id: string; name: string; phone: string; email: string | null; position: string; message: string | null; status: string; created_at: string }[]>([]);
+  const [applications, setApplications] = useState<CareerApplication[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<CareerApplication | null>(null);
 
   useEffect(() => {
     let mounted = true;
     const load = () => {
-      supabase.from('career_applications').select('*').order('created_at', { ascending: false }).then(({ data }) => {
-        if (mounted) { setApplications(data || []); setLoading(false); }
+      fetchCareerApplications().then((data) => {
+        if (mounted) { setApplications(data); setLoading(false); }
       });
     };
     load();
@@ -943,12 +1084,125 @@ function CareersManagement() {
                   {app.message && <p className="text-charcoal-300 text-sm mt-2">"{app.message}"</p>}
                   <p className="text-charcoal-500 text-xs mt-1">{new Date(app.created_at).toLocaleDateString()}</p>
                 </div>
-                <span className="text-xs px-2 py-1 rounded-full bg-charcoal-700 text-charcoal-200">{app.status}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-2 py-1 rounded-full bg-charcoal-700 text-charcoal-200">{app.status}</span>
+                  <button onClick={() => setSelected(app)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10">
+                    <Eye className="w-3.5 h-3.5 text-white" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
+      <AnimatePresence>
+        {selected && <DetailModal title="Application Details" onClose={() => setSelected(null)}>
+          <div className="space-y-3 text-sm">
+            <DetailRow label="Name" value={selected.name} />
+            <DetailRow label="Phone" value={selected.phone} />
+            {selected.email && <DetailRow label="Email" value={selected.email} />}
+            <DetailRow label="Position" value={selected.position} />
+            {selected.message && <DetailRow label="Message" value={selected.message} />}
+            <DetailRow label="Status" value={selected.status} />
+            <DetailRow label="Submitted" value={new Date(selected.created_at).toLocaleString()} />
+          </div>
+        </DetailModal>}
+      </AnimatePresence>
+    </div>
+  );
+}
+function CateringManagement() {
+  const [inquiries, setInquiries] = useState<CateringInquiry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<CateringInquiry | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = () => {
+      fetchCateringInquiries().then((data) => {
+        if (mounted) { setInquiries(data); setLoading(false); }
+      });
+    };
+    load();
+    const channel = supabase.channel('realtime-catering').on('postgres_changes', { event: '*', schema: 'public', table: 'catering_inquiries' }, load).subscribe();
+    return () => { mounted = false; supabase.removeChannel(channel); };
+  }, []);
+
+  return (
+    <div>
+      {loading ? <div className="h-64 rounded-2xl bg-charcoal-800 animate-pulse" /> : inquiries.length === 0 ? (
+        <p className="text-charcoal-400 text-center py-12">No catering inquiries yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {inquiries.map((inq) => (
+            <div key={inq.id} className="card p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-white font-bold text-sm">{inq.name}</p>
+                  <p className="text-charcoal-400 text-xs">{inq.phone}</p>
+                  {inq.event_type && <p className="text-charcoal-300 text-xs mt-1">Event: {inq.event_type}</p>}
+                  {inq.event_date && <p className="text-charcoal-400 text-xs">Date: {inq.event_date}</p>}
+                  {inq.guest_count && <p className="text-charcoal-400 text-xs">Guests: {inq.guest_count}</p>}
+                  <p className="text-charcoal-500 text-xs mt-1">{new Date(inq.created_at).toLocaleDateString()}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-2 py-1 rounded-full bg-charcoal-700 text-charcoal-200">{inq.status}</span>
+                  <button onClick={() => setSelected(inq)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10">
+                    <Eye className="w-3.5 h-3.5 text-white" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <AnimatePresence>
+        {selected && <DetailModal title="Catering Inquiry" onClose={() => setSelected(null)}>
+          <div className="space-y-3 text-sm">
+            <DetailRow label="Name" value={selected.name} />
+            <DetailRow label="Phone" value={selected.phone} />
+            {selected.email && <DetailRow label="Email" value={selected.email} />}
+            {selected.event_type && <DetailRow label="Event Type" value={selected.event_type} />}
+            {selected.event_date && <DetailRow label="Event Date" value={selected.event_date} />}
+            {selected.guest_count != null && <DetailRow label="Guest Count" value={String(selected.guest_count)} />}
+            {selected.message && <DetailRow label="Message" value={selected.message} />}
+            <DetailRow label="Status" value={selected.status} />
+            <DetailRow label="Submitted" value={new Date(selected.created_at).toLocaleString()} />
+          </div>
+        </DetailModal>}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ============ DETAIL MODAL ============
+function DetailModal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  return (
+    <>
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[90%] max-w-lg max-h-[80vh] overflow-y-auto bg-charcoal-800 border border-white/10 rounded-2xl shadow-2xl p-6"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-xl text-white">{title}</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10">
+            <X className="w-4 h-4 text-white" />
+          </button>
+        </div>
+        {children}
+      </motion.div>
+    </>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5 pb-2 border-b border-white/5">
+      <span className="text-charcoal-500 text-xs uppercase tracking-wide">{label}</span>
+      <span className="text-white">{value}</span>
     </div>
   );
 }

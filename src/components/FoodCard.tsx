@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Plus, Star, Flame } from 'lucide-react';
 import type { MenuItem } from '@/types';
 import { useCart } from '@/context/CartContext';
+import { useToast } from '@/components/Toast';
 
 interface FoodCardProps {
   item: MenuItem;
@@ -11,11 +12,15 @@ interface FoodCardProps {
 
 export default function FoodCard({ item, index = 0 }: FoodCardProps) {
   const { addItem } = useCart();
+  const { showToast } = useToast();
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (item.is_available) addItem(item);
+    if (item.is_available) {
+      addItem(item);
+      showToast(`${item.name} added to cart`);
+    }
   };
 
   return (

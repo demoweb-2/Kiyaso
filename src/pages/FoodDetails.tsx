@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, Minus, Star, Flame, ShoppingBag, Check } from 'lucide-react';
 import { fetchMenuItemBySlug, fetchMenuItems } from '@/lib/data';
 import { useCart } from '@/context/CartContext';
+import { useToast } from '@/components/Toast';
 import type { MenuItem } from '@/types';
 import FoodCard from '@/components/FoodCard';
 
@@ -11,6 +12,7 @@ export default function FoodDetails() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { addItem, setIsOpen } = useCart();
+  const { showToast } = useToast();
   const [item, setItem] = useState<MenuItem | null>(null);
   const [related, setRelated] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,7 @@ export default function FoodDetails() {
     if (!item) return;
     for (let i = 0; i < quantity; i++) addItem(item);
     setAdded(true);
+    showToast(`${item.name} added to cart`);
     setTimeout(() => setAdded(false), 2000);
   };
 

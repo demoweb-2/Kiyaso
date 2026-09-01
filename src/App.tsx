@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CartProvider } from '@/context/CartContext';
+import { ToastProvider } from '@/components/Toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -19,6 +20,7 @@ import Careers from '@/pages/Careers';
 import Contact from '@/pages/Contact';
 import Checkout from '@/pages/Checkout';
 import OrderConfirmation from '@/pages/OrderConfirmation';
+import OrderTracking from '@/pages/OrderTracking';
 import Admin from '@/pages/Admin';
 
 const pageVariants = {
@@ -54,6 +56,7 @@ function AnimatedRoutes() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/order-confirmation" element={<OrderConfirmation />} />
+          <Route path="/track-order/:orderNumber" element={<OrderTracking />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>
       </motion.div>
@@ -89,8 +92,10 @@ function App() {
   return (
     <BrowserRouter basename="/Kiyaso">
       <CartProvider>
-        <ScrollToTop />
-        <AppShell />
+        <ToastProvider>
+          <ScrollToTop />
+          <AppShell />
+        </ToastProvider>
       </CartProvider>
     </BrowserRouter>
   );

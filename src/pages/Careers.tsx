@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { CheckCircle, User, Phone, Mail, Briefcase, MessageSquare } from 'lucide-react';
-import { createCareerApplication } from '@/lib/data';
+import { CheckCircle, User, Phone, Mail, Briefcase, MessageSquare, Trash2 } from 'lucide-react';
+import { createCareerApplication, cancelCareerApplication } from '@/lib/data';
+import type { CareerApplication } from '@/types';
 
 const schema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -27,14 +28,43 @@ const benefits = [
 export default function Careers() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [appId, setAppId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   const onSubmit = async (data: FormData) => {
     setError('');
     try {
-      await createCareerApplication({ name: data.name, phone: data.phone, email: data.email || null, position: data.position, message: data.message });
+      const app: CareerApplication = await createCareerApplication({ name: data.name, phone: data.phone, email: data.email || null, position: data.position, message: data.message });
+      setAppId(app.id);
       setSubmitted(true);
     } catch { setError('Something went wrong. Please try again.'); }
+  };
+
+  const FIVE_MIN = 5 * 60 * 1000;
+  const canCancel = appId && elapsed < FIVE_MIN;
+  const remainingMs = FIVE_MIN - elapsed;
+  const remainingMin = Math.floor(remainingMs / 60000);
+  const remainingSec = Math.floor((remainingMs % 60000) / 1000);
+
+  useEffect(() => {
+    if (!submitted || !appId) return;
+    const start = Date.now();
+    const interval = setInterval(() => setElapsed(Date.now() - start), 1000);
+    return () => clearInterval(interval);
+  }, [submitted, appId]);
+
+  const handleCancel = async () => {
+    if (!appId) return;
+    if (!confirm('Cancel this application? This cannot be undone.')) return;
+    setCancelling(true);
+    try {
+      await cancelCareerApplication(appId);
+      setSubmitted(false);
+      setAppId(null);
+      setElapsed(0);
+    } finally { setCancelling(false); }
   };
 
   return (
@@ -79,7 +109,15 @@ export default function Careers() {
               <CheckCircle className="w-16 h-16 text-accent-green mx-auto mb-4" />
               <h3 className="font-display text-2xl text-white mb-2">APPLICATION SENT!</h3>
               <p className="text-charcoal-300 mb-6">Thank you for your interest. We'll reach out if there's a match.</p>
-              <button onClick={() => setSubmitted(false)} className="btn-primary">New Application</button>
+              {canCancel && (
+                <div className="mb-6">
+                  <p className="text-accent-orange text-sm mb-3">Cancel within {remainingMin}m {remainingSec}s</p>
+                  <button onClick={handleCancel} disabled={cancelling} className="btn-primary disabled:opacity-50">
+                    <Trash2 className="w-4 h-4" /> {cancelling ? 'Cancelling...' : 'Cancel Application'}
+                  </button>
+                </div>
+              )}
+              <button onClick={() => { setSubmitted(false); setAppId(null); setElapsed(0); }} className="btn-outline">New Application</button>
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="card p-6 md:p-8 space-y-5">

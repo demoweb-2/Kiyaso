@@ -3,16 +3,16 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { Calendar, Users, Clock, CheckCircle, User, Phone, Mail, MessageSquare } from 'lucide-react';
-import { fetchBranches, createReservation } from '@/lib/data';
-import type { Branch } from '@/types';
+import { Calendar, Users, Clock, CheckCircle, User, Phone, Mail, MessageSquare, Trash2 } from 'lucide-react';
+import { fetchBranches, createReservation, cancelReservation } from '@/lib/data';
+import type { Branch, Reservation } from '@/types';
 
 const schema = z.object({
   branch_id: z.string().min(1, 'Please select a branch'),
   name: z.string().min(2, 'Name is required'),
   phone: z.string().min(10, 'Valid phone number is required'),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
-  guests: z.coerce.number().min(1, 'At least 1 guest').max(20, 'Max 20 guests'),
+  guests: z.number().min(1, 'At least 1 guest').max(20, 'Max 20 guests'),
   date: z.string().min(1, 'Date is required'),
   time: z.string().min(1, 'Time is required'),
   special_requests: z.string().optional(),
@@ -26,6 +26,9 @@ export default function Reservations() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [reservationId, setReservationId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -38,7 +41,7 @@ export default function Reservations() {
   const onSubmit = async (data: FormData) => {
     setError('');
     try {
-      await createReservation({
+      const res: Reservation = await createReservation({
         branch_id: data.branch_id,
         name: data.name,
         phone: data.phone,
@@ -48,6 +51,7 @@ export default function Reservations() {
         time: data.time,
         special_requests: data.special_requests || null,
       });
+      setReservationId(res.id);
       setSubmitted(true);
     } catch {
       setError('Something went wrong. Please try again or call us directly.');
@@ -55,6 +59,31 @@ export default function Reservations() {
   };
 
   const today = new Date().toISOString().split('T')[0];
+
+  const FIVE_MIN = 5 * 60 * 1000;
+  const canCancel = reservationId && elapsed < FIVE_MIN;
+  const remainingMs = FIVE_MIN - elapsed;
+  const remainingMin = Math.floor(remainingMs / 60000);
+  const remainingSec = Math.floor((remainingMs % 60000) / 1000);
+
+  useEffect(() => {
+    if (!submitted || !reservationId) return;
+    const start = Date.now();
+    const interval = setInterval(() => setElapsed(Date.now() - start), 1000);
+    return () => clearInterval(interval);
+  }, [submitted, reservationId]);
+
+  const handleCancel = async () => {
+    if (!reservationId) return;
+    if (!confirm('Cancel this reservation? This cannot be undone.')) return;
+    setCancelling(true);
+    try {
+      await cancelReservation(reservationId);
+      setSubmitted(false);
+      setReservationId(null);
+      setElapsed(0);
+    } finally { setCancelling(false); }
+  };
 
   if (submitted) {
     return (
@@ -65,7 +94,15 @@ export default function Reservations() {
           </div>
           <h2 className="font-display text-3xl text-white mb-3">RESERVATION RECEIVED!</h2>
           <p className="text-charcoal-300 mb-8">We've received your reservation request. Our team will confirm your booking shortly via phone.</p>
-          <button onClick={() => setSubmitted(false)} className="btn-primary">Make Another Reservation</button>
+          {canCancel && (
+            <div className="mb-6">
+              <p className="text-accent-orange text-sm mb-3">Cancel within {remainingMin}m {remainingSec}s</p>
+              <button onClick={handleCancel} disabled={cancelling} className="btn-primary disabled:opacity-50">
+                <Trash2 className="w-4 h-4" /> {cancelling ? 'Cancelling...' : 'Cancel Reservation'}
+              </button>
+            </div>
+          )}
+          <button onClick={() => { setSubmitted(false); setReservationId(null); setElapsed(0); }} className="btn-outline">Make Another Reservation</button>
         </motion.div>
       </div>
     );

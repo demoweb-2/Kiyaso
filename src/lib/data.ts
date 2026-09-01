@@ -144,6 +144,24 @@ export async function updateOrderStatus(id: string, status: string): Promise<voi
   if (error) throw error;
 }
 
+export async function fetchOrderByNumber(orderNumber: string): Promise<Order | null> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*, branch:branches(name)')
+    .eq('order_number', orderNumber)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function cancelOrder(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'cancelled' })
+    .eq('id', id);
+  if (error) throw error;
+}
+
 // ---------- Reservations ----------
 export async function createReservation(res: Partial<Reservation>): Promise<Reservation> {
   const { data, error } = await supabase
@@ -172,6 +190,14 @@ export async function updateReservationStatus(id: string, status: string): Promi
   if (error) throw error;
 }
 
+export async function cancelReservation(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('reservations')
+    .update({ status: 'rejected' })
+    .eq('id', id);
+  if (error) throw error;
+}
+
 // ---------- Catering ----------
 export async function createCateringInquiry(inquiry: Partial<CateringInquiry>): Promise<CateringInquiry> {
   const { data, error } = await supabase
@@ -183,6 +209,23 @@ export async function createCateringInquiry(inquiry: Partial<CateringInquiry>): 
   return data;
 }
 
+export async function fetchCateringInquiries(): Promise<CateringInquiry[]> {
+  const { data, error } = await supabase
+    .from('catering_inquiries')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function cancelCateringInquiry(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('catering_inquiries')
+    .update({ status: 'cancelled' })
+    .eq('id', id);
+  if (error) throw error;
+}
+
 // ---------- Careers ----------
 export async function createCareerApplication(app: Partial<CareerApplication>): Promise<CareerApplication> {
   const { data, error } = await supabase
@@ -192,6 +235,23 @@ export async function createCareerApplication(app: Partial<CareerApplication>): 
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function fetchCareerApplications(): Promise<CareerApplication[]> {
+  const { data, error } = await supabase
+    .from('career_applications')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function cancelCareerApplication(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('career_applications')
+    .update({ status: 'rejected' })
+    .eq('id', id);
+  if (error) throw error;
 }
 
 // ---------- Contact ----------

@@ -64,7 +64,7 @@ export default function Checkout() {
     setError('');
     setSubmitting(true);
     try {
-      const orderItems = items.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url }));
+      const orderItems = items.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || undefined }));
       const order = await createOrder({
         branch_id: data.branch_id,
         customer_name: data.customer_name,
