@@ -158,6 +158,59 @@
   .perspective {
     perspective: 1000px;
   }
+
+  /* Apple-inspired animations */
+  @keyframes apple-rise {
+    0% { opacity: 0; transform: translateY(30px) scale(0.96); }
+    60% { opacity: 1; transform: translateY(-4px) scale(1.01); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @keyframes apple-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(22, 163, 74, 0.3), 0 0 40px rgba(22, 163, 74, 0.15); }
+    50% { box-shadow: 0 0 30px rgba(22, 163, 74, 0.5), 0 0 60px rgba(22, 163, 74, 0.25); }
+  }
+
+  @keyframes apple-shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  @keyframes apple-scale-in {
+    0% { opacity: 0; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes apple-slide-up {
+    0% { opacity: 0; transform: translateY(40px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-apple-rise {
+    animation: apple-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-apple-glow {
+    animation: apple-glow 2s ease-in-out infinite;
+  }
+
+  .animate-apple-scale-in {
+    animation: apple-scale-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-apple-slide-up {
+    animation: apple-slide-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .apple-shimmer-text {
+    background: linear-gradient(90deg, #ffffff 0%, #ffffff 40%, rgba(255,255,255,0.6) 50%, #ffffff 60%, #ffffff 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: apple-shimmer 3s linear infinite;
+  }
 }
 
 /* Custom scrollbar */
