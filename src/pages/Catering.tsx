@@ -203,7 +203,7 @@ export default function Catering() {
                   <label className="text-white font-semibold text-sm mb-2 block">Guests</label>
                   <div className="relative">
                     <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-500" />
-                    <input type="number" {...register('guest_count')} placeholder="50" min={1} className="input-field pl-10" />
+                    <input type="number" {...register('guest_count', { valueAsNumber: true })} placeholder="50" min={1} className="input-field pl-10" />
                   </div>
                 </div>
               </div>

@@ -14,6 +14,18 @@ export default defineConfig({
     },
   },
 
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['framer-motion', 'lucide-react'],
+          'data-vendor': ['@supabase/supabase-js', 'zod', 'react-hook-form', '@hookform/resolvers'],
+        },
+      },
+    },
+  },
+
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
