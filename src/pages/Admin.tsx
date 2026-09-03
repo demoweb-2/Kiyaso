@@ -167,7 +167,7 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-charcoal-950 flex">
       {/* Sidebar */}
-      <aside className={`fixed lg:sticky top-0 left-0 z-40 w-64 h-screen bg-charcoal-900 border-r border-white/5 overflow-y-auto transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <aside className={`fixed lg:sticky top-0 left-0 z-40 w-64 h-screen liquid-glass overflow-y-auto transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="p-4">
           <div className="flex items-center gap-2 px-2 mb-6">
             <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center">
@@ -193,7 +193,7 @@ export default function Admin() {
       {/* Main content */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Admin Header */}
-        <header className="sticky top-0 z-20 bg-charcoal-900/95 backdrop-blur-lg border-b border-white/5 px-4 md:px-6 py-4 flex items-center justify-between">
+        <header className="sticky top-0 z-20 liquid-glass-nav px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center">
               <MenuIcon className="w-5 h-5 text-white" />
@@ -218,7 +218,7 @@ export default function Admin() {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="absolute right-0 top-12 z-40 w-72 bg-charcoal-800 border border-white/10 rounded-xl shadow-xl max-h-96 overflow-y-auto"
+                      className="absolute right-0 top-12 z-40 w-72 liquid-glass rounded-xl shadow-xl max-h-96 overflow-y-auto"
                     >
                       <div className="p-3 border-b border-white/5 flex items-center justify-between">
                         <p className="text-white font-semibold text-sm">Notifications</p>
@@ -1186,10 +1186,10 @@ function DetailModal({ title, children, onClose }: { title: string; children: Re
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-[800px] max-h-[90vh] flex flex-col bg-charcoal-800 border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+          className="relative w-full max-w-[800px] max-h-[90vh] flex flex-col liquid-glass-modal rounded-3xl overflow-hidden"
         >
           {/* Fixed header with close button */}
-          <div className="sticky top-0 z-10 flex items-center justify-between px-6 sm:px-8 py-5 bg-charcoal-800/95 backdrop-blur-lg border-b border-white/10">
+          <div className="sticky top-0 z-10 flex items-center justify-between px-6 sm:px-8 py-5 liquid-glass-modal border-b border-white/10">
             <h2 className="font-display text-xl sm:text-2xl text-white tracking-wide">{title}</h2>
             <button
               onClick={onClose}

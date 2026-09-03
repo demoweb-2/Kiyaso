@@ -45,7 +45,7 @@ export default function Navbar() {
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           scrolled
-            ? 'bg-charcoal-950/95 backdrop-blur-lg border-b border-white/5 py-3'
+            ? 'liquid-glass-nav py-3'
             : 'bg-transparent py-5'
         }`}
       >
@@ -94,7 +94,7 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsOpen(true)}
-              className="relative w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
+              className="relative w-10 h-10 rounded-xl liquid-glass liquid-glass-hover flex items-center justify-center transition-all"
               aria-label="Cart"
             >
               <ShoppingBag className="w-5 h-5 text-white" />
@@ -114,7 +114,7 @@ export default function Navbar() {
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="lg:hidden w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center"
+              className="lg:hidden w-10 h-10 rounded-xl liquid-glass liquid-glass-hover flex items-center justify-center"
               aria-label="Menu"
             >
               {mobileOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
@@ -130,7 +130,7 @@ export default function Navbar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 lg:hidden bg-charcoal-950/98 backdrop-blur-xl pt-24 pb-8 overflow-y-auto"
+            className="fixed inset-0 z-40 lg:hidden liquid-glass pt-24 pb-8 overflow-y-auto"
           >
             <nav className="flex flex-col px-6 gap-1">
               {navLinks.map((link, i) => (

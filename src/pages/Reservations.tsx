@@ -173,7 +173,7 @@ export default function Reservations() {
                 <label className="text-white font-semibold text-sm mb-2 block">Guests</label>
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-500" />
-                  <input type="number" {...register('guests')} defaultValue={2} min={1} max={20} className="input-field pl-10" />
+                  <input type="number" {...register('guests', { valueAsNumber: true })} defaultValue={2} min={1} max={20} className="input-field pl-10" />
                 </div>
                 {errors.guests && <p className="text-accent-orange text-xs mt-1">{errors.guests.message}</p>}
               </div>
