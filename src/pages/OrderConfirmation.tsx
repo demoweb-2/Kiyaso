@@ -1,11 +1,27 @@
 import { useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, Clock, Phone, ArrowRight, MapPin } from 'lucide-react';
+import { useEffect } from 'react';
+
+const ACTIVE_ORDERS_KEY = 'kiyaso_active_orders';
+const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
 
 export default function OrderConfirmation() {
   const location = useLocation();
   const orderNumber = (location.state as { orderNumber?: string })?.orderNumber || 'KY00000000';
   const total = (location.state as { total?: number })?.total || 0;
+
+  useEffect(() => {
+    if (orderNumber === 'KY00000000') return;
+    try {
+      const raw = localStorage.getItem(ACTIVE_ORDERS_KEY);
+      const orders: string[] = raw ? JSON.parse(raw) : [];
+      if (!orders.includes(orderNumber)) {
+        orders.unshift(orderNumber);
+        localStorage.setItem(ACTIVE_ORDERS_KEY, JSON.stringify(orders.slice(0, 20)));
+      }
+    } catch { /* ignore */ }
+  }, [orderNumber]);
 
   return (
     <div className="pt-32 pb-20 px-4">

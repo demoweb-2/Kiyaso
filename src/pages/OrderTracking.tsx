@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CheckCircle, Clock, Package, ChefHat, Bike, XCircle, Phone, ArrowRight,
-  Edit2, Trash2, ArrowLeft,
+  CheckCircle, Clock, Package, ChefHat, XCircle, ArrowRight,
+  Trash2, ArrowLeft, Search, Bike,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { fetchOrderByNumber, cancelOrder } from '@/lib/data';
@@ -21,20 +21,175 @@ const statusConfig: Record<string, { label: string; icon: typeof Clock; color: s
 };
 
 const FIVE_MINUTES = 5 * 60 * 1000;
+const ACTIVE_ORDERS_KEY = 'kiyaso_active_orders';
+const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
+
+function getActiveOrderNumbers(): string[] {
+  try {
+    const raw = localStorage.getItem(ACTIVE_ORDERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveActiveOrderNumber(orderNumber: string) {
+  try {
+    const orders = getActiveOrderNumbers();
+    if (!orders.includes(orderNumber)) {
+      orders.unshift(orderNumber);
+      localStorage.setItem(ACTIVE_ORDERS_KEY, JSON.stringify(orders.slice(0, 20)));
+    }
+  } catch { /* ignore */ }
+}
+
+function removeActiveOrderNumber(orderNumber: string) {
+  try {
+    const orders = getActiveOrderNumbers().filter((o) => o !== orderNumber);
+    localStorage.setItem(ACTIVE_ORDERS_KEY, JSON.stringify(orders));
+  } catch { /* ignore */ }
+}
 
 export default function OrderTracking() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
+  if (orderNumber) {
+    return <OrderTrackingDetail orderNumber={orderNumber} />;
+  }
+  return <OrderTrackingLanding />;
+}
+
+function OrderTrackingLanding() {
+  const navigate = useNavigate();
+  const [searchId, setSearchId] = useState('');
+  const [activeOrders, setActiveOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchError, setSearchError] = useState('');
+
+  useEffect(() => {
+    const orderNumbers = getActiveOrderNumbers();
+    if (orderNumbers.length === 0) {
+      setLoading(false);
+      return;
+    }
+    Promise.all(orderNumbers.map((n) => fetchOrderByNumber(n).catch(() => null)))
+      .then((results) => {
+        const valid = results.filter((r): r is Order => r !== null);
+        const stillActive = valid.filter((o) => ACTIVE_STATUSES.includes(o.status));
+        const completed = valid.filter((o) => !ACTIVE_STATUSES.includes(o.status));
+        completed.forEach((o) => removeActiveOrderNumber(o.order_number));
+        setActiveOrders(stillActive);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleSearch = async () => {
+    if (!searchId.trim()) return;
+    setSearchError('');
+    const trimmed = searchId.trim();
+    const order = await fetchOrderByNumber(trimmed).catch(() => null);
+    if (!order) {
+      setSearchError(`Order "${trimmed}" not found. Please check your order number.`);
+      return;
+    }
+    if (ACTIVE_STATUSES.includes(order.status)) {
+      saveActiveOrderNumber(trimmed);
+    }
+    navigate(`/track-order/${trimmed}`);
+  };
+
+  return (
+    <div className="pt-20 pb-20 px-4">
+      <div className="max-w-2xl mx-auto">
+        <Link to="/menu" className="flex items-center gap-2 text-charcoal-400 hover:text-white transition-colors mb-6 text-sm">
+          <ArrowLeft className="w-4 h-4" /> Back to Menu
+        </Link>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <h1 className="font-display text-3xl md:text-4xl text-white mb-2">TRACK YOUR ORDER</h1>
+          <p className="text-charcoal-400 text-sm mb-8">Enter your order number or select from your active orders below.</p>
+        </motion.div>
+
+        {/* Track by Order ID */}
+        <div className="card p-6 mb-6">
+          <h3 className="text-white font-bold text-lg mb-4">Track by Order ID</h3>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-500" />
+              <input
+                value={searchId}
+                onChange={(e) => setSearchId(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearch())}
+                placeholder="e.g. KY12345678"
+                className="input-field pl-10"
+              />
+            </div>
+            <button onClick={handleSearch} className="btn-primary !px-6">
+              Track <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          {searchError && <p className="text-accent-orange text-xs mt-2">{searchError}</p>}
+        </div>
+
+        {/* Active Orders */}
+        <div>
+          <h3 className="text-white font-bold text-lg mb-4">Your Active Orders</h3>
+          {loading ? (
+            <div className="h-32 rounded-2xl bg-charcoal-800 animate-pulse" />
+          ) : activeOrders.length === 0 ? (
+            <div className="card p-8 text-center">
+              <Package className="w-10 h-10 text-charcoal-600 mx-auto mb-3" />
+              <p className="text-charcoal-400 text-sm">No active orders. Place an order to track it here.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activeOrders.map((order) => {
+                const config = statusConfig[order.status];
+                const Icon = config?.icon || Clock;
+                return (
+                  <motion.div
+                    key={order.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="card p-4"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-white font-bold text-sm">{order.order_number}</p>
+                        <p className="text-charcoal-400 text-xs">{order.items.length} items • Rs. {Number(order.total).toLocaleString()}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Icon className={`w-3.5 h-3.5 ${config?.color || 'text-charcoal-500'}`} />
+                          <span className={`text-xs ${config?.color || 'text-charcoal-500'}`}>{config?.label}</span>
+                          <span className="text-charcoal-600 text-xs">• {new Date(order.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <Link to={`/track-order/${order.order_number}`} className="btn-primary !py-2 !px-4 text-sm shrink-0">
+                        Track <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderTrackingDetail({ orderNumber }: { orderNumber: string }) {
+  const navigate = useNavigate();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [elapsed, setElapsed] = useState(0);
   const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
-    if (!orderNumber) return;
     setLoading(true);
     fetchOrderByNumber(orderNumber).then((data) => {
       setOrder(data);
       setLoading(false);
+      if (data && ACTIVE_STATUSES.includes(data.status)) {
+        saveActiveOrderNumber(orderNumber);
+      }
     });
 
     const channel = supabase
@@ -43,7 +198,12 @@ export default function OrderTracking() {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `order_number=eq.${orderNumber}` },
         () => {
-          fetchOrderByNumber(orderNumber!).then(setOrder);
+          fetchOrderByNumber(orderNumber).then((data) => {
+            setOrder(data);
+            if (data && !ACTIVE_STATUSES.includes(data.status)) {
+              removeActiveOrderNumber(orderNumber);
+            }
+          });
         }
       )
       .subscribe();
@@ -71,7 +231,7 @@ export default function OrderTracking() {
     return (
       <div className="pt-32 px-4 text-center">
         <p className="text-charcoal-400 text-lg mb-4">Order not found</p>
-        <Link to="/menu" className="btn-primary">Back to Menu</Link>
+        <Link to="/track-order" className="btn-primary">Back to Tracking</Link>
       </div>
     );
   }
@@ -86,6 +246,8 @@ export default function OrderTracking() {
     setCancelling(true);
     try {
       await cancelOrder(order.id);
+      removeActiveOrderNumber(orderNumber);
+      navigate('/track-order');
     } finally {
       setCancelling(false);
     }
@@ -96,8 +258,8 @@ export default function OrderTracking() {
   return (
     <div className="pt-20 pb-20 px-4">
       <div className="max-w-2xl mx-auto">
-        <Link to="/menu" className="flex items-center gap-2 text-charcoal-400 hover:text-white transition-colors mb-6 text-sm">
-          <ArrowLeft className="w-4 h-4" /> Back to Menu
+        <Link to="/track-order" className="flex items-center gap-2 text-charcoal-400 hover:text-white transition-colors mb-6 text-sm">
+          <ArrowLeft className="w-4 h-4" /> All Active Orders
         </Link>
 
         {/* Header */}

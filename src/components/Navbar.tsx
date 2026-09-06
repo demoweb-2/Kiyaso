@@ -17,6 +17,7 @@ const navLinks = [
   { label: 'Offers', path: '/offers' },
   { label: 'Careers', path: '/careers' },
   { label: 'Contact', path: '/contact' },
+  { label: 'Track Order', path: '/track-order' },
 ];
 
 export default function Navbar() {

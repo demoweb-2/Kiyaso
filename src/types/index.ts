@@ -80,6 +80,9 @@ export interface Order {
   customer_email: string | null;
   delivery_type: 'pickup' | 'delivery';
   address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  map_url: string | null;
   items: OrderItem[];
   subtotal: number;
   delivery_fee: number;

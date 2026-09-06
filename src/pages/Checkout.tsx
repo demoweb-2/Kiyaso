@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { motion } from 'framer-motion';
-import { User, Phone, Mail, MapPin, Store, Truck, Plus, Minus, Trash2, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, Phone, Mail, MapPin, Store, Truck, Plus, Minus, Trash2, Navigation, CheckCircle } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { fetchBranches, fetchSettings, createOrder } from '@/lib/data';
 import type { Branch, Settings } from '@/types';
@@ -21,6 +21,13 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+interface MapLocation {
+  lat: number;
+  lng: number;
+  address: string;
+  map_url: string;
+}
+
 export default function Checkout() {
   const navigate = useNavigate();
   const { items, subtotal, updateQuantity, removeItem, clearCart } = useCart();
@@ -28,7 +35,9 @@ export default function Checkout() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
+  const [mapLocation, setMapLocation] = useState<MapLocation | null>(null);
+  const [showMap, setShowMap] = useState(false);
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { delivery_type: 'pickup' },
   });
@@ -72,6 +81,9 @@ export default function Checkout() {
         customer_email: data.customer_email || null,
         delivery_type: data.delivery_type,
         address: data.address || null,
+        latitude: mapLocation?.lat ?? null,
+        longitude: mapLocation?.lng ?? null,
+        map_url: mapLocation?.map_url ?? null,
         items: orderItems,
         subtotal,
         delivery_fee: deliveryFee,
@@ -168,11 +180,53 @@ export default function Checkout() {
               {/* Address (if delivery) */}
               {deliveryType === 'delivery' && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="card p-6">
-                  <h3 className="text-white font-bold text-lg mb-4">Delivery Address</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-white font-bold text-lg">Delivery Address</h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowMap(!showMap)}
+                      className="flex items-center gap-2 text-sm text-brand-500 hover:text-brand-400 font-semibold transition-colors"
+                    >
+                      <Navigation className="w-4 h-4" />
+                      {showMap ? 'Hide Map' : 'Select on Map'}
+                    </button>
+                  </div>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3 w-4 h-4 text-charcoal-500" />
                     <textarea {...register('address')} rows={3} placeholder="Your full delivery address" className="input-field pl-10 resize-none" />
                   </div>
+
+                  <AnimatePresence>
+                    {showMap && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <MapPicker
+                          onLocationSelect={(loc) => {
+                            setMapLocation(loc);
+                            setValue('address', loc.address);
+                          }}
+                          initialLocation={mapLocation}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {mapLocation && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 mt-3 p-3 rounded-xl bg-accent-green/10 border border-accent-green/30"
+                    >
+                      <CheckCircle className="w-4 h-4 text-accent-green shrink-0" />
+                      <p className="text-accent-green text-xs font-medium">
+                        Location pinned: {mapLocation.lat.toFixed(4)}, {mapLocation.lng.toFixed(4)}
+                      </p>
+                    </motion.div>
+                  )}
                 </motion.div>
               )}
 
@@ -233,6 +287,122 @@ export default function Checkout() {
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+function MapPicker({ onLocationSelect, initialLocation }: { onLocationSelect: (loc: MapLocation) => void; initialLocation: MapLocation | null }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [lat, setLat] = useState(initialLocation?.lat ?? 7.8731);
+  const [lng, setLng] = useState(initialLocation?.lng ?? 80.7718);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+
+  const mapUrl = `https://www.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+  const mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`
+      );
+      const results = await response.json();
+      if (results && results.length > 0) {
+        const newLat = parseFloat(results[0].lat);
+        const newLng = parseFloat(results[0].lon);
+        setLat(newLat);
+        setLng(newLng);
+        onLocationSelect({
+          lat: newLat,
+          lng: newLng,
+          address: results[0].display_name || searchQuery,
+          map_url: `https://www.google.com/maps?q=${newLat},${newLng}`,
+        });
+      }
+    } catch {
+      // ignore — user can still use the map manually
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const newLat = pos.coords.latitude;
+      const newLng = pos.coords.longitude;
+      setLat(newLat);
+      setLng(newLng);
+      onLocationSelect({
+        lat: newLat,
+        lng: newLng,
+        address: `Location at ${newLat.toFixed(4)}, ${newLng.toFixed(4)}`,
+        map_url: `https://www.google.com/maps?q=${newLat},${newLng}`,
+      });
+    });
+  };
+
+  const handleConfirmLocation = () => {
+    onLocationSelect({
+      lat,
+      lng,
+      address: `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+      map_url: mapLink,
+    });
+  };
+
+  return (
+    <div className="mt-4 space-y-3">
+      {/* Search bar */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-500" />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearch())}
+            placeholder="Search for a place..."
+            className="input-field pl-10 text-sm"
+          />
+        </div>
+        <button type="button" onClick={handleSearch} disabled={searching} className="btn-primary !px-4 !py-3 text-sm disabled:opacity-50">
+          {searching ? '...' : 'Search'}
+        </button>
+        <button type="button" onClick={handleUseMyLocation} className="btn-outline !px-4 !py-3 text-sm" title="Use my current location">
+          <Navigation className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Map embed */}
+      <div className="relative rounded-xl overflow-hidden border border-white/10">
+        <iframe
+          ref={iframeRef}
+          src={mapUrl}
+          className="w-full h-72"
+          title="Select location on map"
+          loading="lazy"
+        />
+        {/* Center pin overlay */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-10">
+          <div className="flex flex-col items-center">
+            <div className="w-8 h-8 rounded-full bg-brand-600 border-2 border-white shadow-lg flex items-center justify-center">
+              <MapPin className="w-4 h-4 text-white" />
+            </div>
+            <div className="w-1 h-4 bg-brand-600" />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-charcoal-400 text-xs">
+          Pin: {lat.toFixed(4)}, {lng.toFixed(4)}
+        </p>
+        <button type="button" onClick={handleConfirmLocation} className="btn-primary !py-2 text-sm">
+          <CheckCircle className="w-4 h-4" /> Confirm Location
+        </button>
+      </div>
     </div>
   );
 }

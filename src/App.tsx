@@ -67,6 +67,7 @@ function AnimatedRoutes() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/order-confirmation" element={<OrderConfirmation />} />
+            <Route path="/track-order" element={<OrderTracking />} />
             <Route path="/track-order/:orderNumber" element={<OrderTracking />} />
             <Route path="/admin" element={<Admin />} />
           </Routes>

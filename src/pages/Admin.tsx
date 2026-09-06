@@ -4,7 +4,7 @@ import {
   LayoutDashboard, ShoppingBag, CalendarCheck, UtensilsCrossed, Building2,
   Image as ImageIcon, Tag, Star, Briefcase, Settings as SettingsIcon, BarChart3, Menu as MenuIcon, X,
   TrendingUp, Clock, Users, DollarSign, Plus, Edit2, Trash2, Search, Flame, Check, ArrowLeft,
-  Facebook, Instagram, Youtube, Music, MessageCircle, LogOut, Lock, Bell, Eye,
+  Facebook, Instagram, Youtube, Music, MessageCircle, LogOut, Lock, Bell, Eye, MapPin, Share2, Navigation,
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { useToast } from '@/components/Toast';
@@ -455,6 +455,44 @@ function Orders() {
             {selected.customer_email && <DetailRow label="Email" value={selected.customer_email} />}
             <DetailRow label="Delivery Type" value={selected.delivery_type} />
             {selected.address && <DetailRow label="Address" value={selected.address} />}
+            {selected.latitude != null && selected.longitude != null && (
+              <div className="pt-2">
+                <p className="text-charcoal-500 text-xs font-semibold uppercase tracking-[0.1em] mb-2">Delivery Location</p>
+                <div className="rounded-xl overflow-hidden border border-white/10 mb-3">
+                  <iframe
+                    src={`https://www.google.com/maps?q=${selected.latitude},${selected.longitude}&z=15&output=embed`}
+                    className="w-full h-48"
+                    title="Delivery location"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  {selected.map_url && (
+                    <a
+                      href={selected.map_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-all"
+                    >
+                      <MapPin className="w-4 h-4" /> View on Google Maps
+                    </a>
+                  )}
+                  <button
+                    onClick={async () => {
+                      const shareUrl = selected.map_url || `https://www.google.com/maps?q=${selected.latitude},${selected.longitude}`;
+                      if (navigator.share) {
+                        try { await navigator.share({ title: 'Delivery Location', url: shareUrl }); } catch { /* user cancelled */ }
+                      } else {
+                        await navigator.clipboard.writeText(shareUrl);
+                      }
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-semibold hover:bg-white/10 transition-all"
+                  >
+                    <Share2 className="w-4 h-4" /> Share Location
+                  </button>
+                </div>
+              </div>
+            )}
             {selected.notes && <DetailRow label="Notes" value={selected.notes} />}
             <DetailRow label="Status" value={selected.status} />
             <DetailRow label="Submitted" value={new Date(selected.created_at).toLocaleString()} />
