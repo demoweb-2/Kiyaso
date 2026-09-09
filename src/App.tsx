@@ -1,11 +1,9 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { CartProvider } from '@/context/CartContext';
 import { ToastProvider } from '@/components/Toast';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import CartDrawer from '@/components/CartDrawer';
 import ScrollToTop from '@/components/ScrollToTop';
 
 const Home = lazy(() => import('@/pages/Home'));
@@ -24,6 +22,8 @@ const Checkout = lazy(() => import('@/pages/Checkout'));
 const OrderConfirmation = lazy(() => import('@/pages/OrderConfirmation'));
 const OrderTracking = lazy(() => import('@/pages/OrderTracking'));
 const Admin = lazy(() => import('@/pages/Admin'));
+const Footer = lazy(() => import('@/components/Footer'));
+const CartDrawer = lazy(() => import('@/components/CartDrawer'));
 
 const pageVariants = {
   initial: { opacity: 0, y: 12 },
@@ -37,6 +37,24 @@ function PageLoader() {
       <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-brand-600 animate-spin" />
     </div>
   );
+}
+
+function usePrefetchRoutes() {
+  useEffect(() => {
+    const idle = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1500));
+    const prefetch = () => {
+      import('@/pages/Menu');
+      import('@/pages/Reservations');
+      import('@/pages/Admin');
+      import('@/components/Footer');
+      import('@/components/CartDrawer');
+    };
+    const handle = idle(prefetch) as number;
+    return () => {
+      if (window.cancelIdleCallback) window.cancelIdleCallback(handle);
+      else clearTimeout(handle);
+    };
+  }, []);
 }
 
 function AnimatedRoutes() {
@@ -80,6 +98,7 @@ function AnimatedRoutes() {
 function AppShell() {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith('/admin');
+  usePrefetchRoutes();
 
   if (isAdmin) {
     return (
@@ -92,11 +111,15 @@ function AppShell() {
   return (
     <div className="min-h-screen bg-charcoal-950 flex flex-col">
       <Navbar />
-      <CartDrawer />
+      <Suspense fallback={null}>
+        <CartDrawer />
+      </Suspense>
       <main className="flex-1">
         <AnimatedRoutes />
       </main>
-      <Footer />
+      <Suspense fallback={null}>
+        <Footer />
+      </Suspense>
     </div>
   );
 }

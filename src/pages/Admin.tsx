@@ -286,10 +286,10 @@ function Dashboard({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
 
   const loading = ordersLoading || resLoading;
 
-  const revenue = orders.filter((o) => o.status !== 'cancelled').reduce((sum, o) => sum + Number(o.total), 0);
-  const pendingOrders = orders.filter((o) => o.status === 'pending').length;
-  const recentOrders = orders.slice(0, 5);
-  const recentReservations = reservations.slice(0, 5);
+  const revenue = useMemo(() => orders.filter((o) => o.status !== 'cancelled').reduce((sum, o) => sum + Number(o.total), 0), [orders]);
+  const pendingOrders = useMemo(() => orders.filter((o) => o.status === 'pending').length, [orders]);
+  const recentOrders = useMemo(() => orders.slice(0, 5), [orders]);
+  const recentReservations = useMemo(() => reservations.slice(0, 5), [reservations]);
 
   if (loading) return <div className="h-64 rounded-2xl bg-charcoal-800 animate-pulse" />;
 
@@ -390,11 +390,11 @@ function Orders() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Order | null>(null);
 
-  const filtered = orders.filter((o) => {
+  const filtered = useMemo(() => orders.filter((o) => {
     if (filter !== 'all' && o.status !== filter) return false;
     if (search && !o.order_number.toLowerCase().includes(search.toLowerCase()) && !o.customer_name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
-  });
+  }), [orders, filter, search]);
 
   const statuses = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
 
@@ -522,7 +522,7 @@ function Reservations() {
   const [filter, setFilter] = useState('all');
   const [selected, setSelected] = useState<Reservation | null>(null);
 
-  const filtered = filter === 'all' ? reservations : reservations.filter((r) => r.status === filter);
+  const filtered = useMemo(() => filter === 'all' ? reservations : reservations.filter((r) => r.status === filter), [reservations, filter]);
   const statuses = ['pending', 'approved', 'rejected', 'completed'];
 
   const handleStatus = async (id: string, status: string) => { await updateReservationStatus(id, status); };
