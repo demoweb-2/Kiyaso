@@ -7,7 +7,7 @@ export default function Delivery() {
     <div className="pt-20">
       <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="absolute inset-0">
-          <img src="https://images.pexels.com/photos/4393252/pexels-photo-4393252.jpeg?auto=compress&cs=tinysrgb&h=800&w=1920" alt="Delivery" className="w-full h-full object-cover" />
+          <img src="https://images.pexels.com/photos/4393252/pexels-photo-4393252.jpeg?auto=compress&cs=tinysrgb&h=800&w=1920" alt="Delivery" className="w-full h-full object-cover" fetchPriority="high" />
           <div className="absolute inset-0 bg-charcoal-950/80" />
         </div>
         <div className="relative z-10 max-w-4xl mx-auto text-center">

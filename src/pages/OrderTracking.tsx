@@ -367,7 +367,7 @@ function OrderTrackingDetail({ orderNumber }: { orderNumber: string }) {
             {order.items.map((item, i) => (
               <div key={i} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {item.image_url && <img src={item.image_url} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />}
+                  {item.image_url && <img src={item.image_url} alt={item.name} className="w-10 h-10 rounded-lg object-cover" loading="lazy" />}
                   <div>
                     <p className="text-white text-sm font-medium">{item.name}</p>
                     <p className="text-charcoal-400 text-xs">Qty: {item.quantity}</p>

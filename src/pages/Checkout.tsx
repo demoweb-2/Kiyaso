@@ -249,7 +249,7 @@ export default function Checkout() {
               <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
                 {items.map((item) => (
                   <div key={item.id} className="flex gap-3 items-center">
-                    <img src={item.image_url || ''} alt={item.name} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                    <img src={item.image_url || ''} alt={item.name} className="w-12 h-12 rounded-lg object-cover shrink-0" loading="lazy" />
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">{item.name}</p>
                       <p className="text-charcoal-400 text-xs">Rs. {item.price.toLocaleString()}</p>

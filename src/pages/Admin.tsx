@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, ShoppingBag, CalendarCheck, UtensilsCrossed, Building2,
@@ -247,7 +247,7 @@ export default function Admin() {
                 )}
               </AnimatePresence>
             </div>
-            <a href="/" className="flex items-center gap-2 text-charcoal-300 hover:text-white text-sm transition-colors">
+            <a href={`${import.meta.env.BASE_URL}`} className="flex items-center gap-2 text-charcoal-300 hover:text-white text-sm transition-colors">
               <ArrowLeft className="w-4 h-4" /> View Site
             </a>
             <button onClick={handleLogout} className="flex items-center gap-2 text-charcoal-300 hover:text-white text-sm transition-colors">
@@ -630,7 +630,7 @@ function MenuManagement() {
             const cat = categories.find((c) => c.id === item.category_id);
             return (
               <div key={item.id} className="card p-3 flex gap-3">
-                <img src={item.image_url || ''} alt={item.name} className="w-16 h-16 rounded-lg object-cover shrink-0" />
+                <img src={item.image_url || ''} alt={item.name} className="w-16 h-16 rounded-lg object-cover shrink-0" loading="lazy" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-white font-semibold text-sm truncate">{item.name}</p>
@@ -739,7 +739,7 @@ function CategoryManagement() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {categories.map((cat) => (
             <div key={cat.id} className="card p-3">
-              <img src={cat.image_url || ''} alt={cat.name} className="w-full h-24 rounded-lg object-cover mb-2" />
+              <img src={cat.image_url || ''} alt={cat.name} className="w-full h-24 rounded-lg object-cover mb-2" loading="lazy" />
               <p className="text-white font-semibold text-sm">{cat.name}</p>
               <p className="text-charcoal-500 text-xs mb-2">/{cat.slug}</p>
               <div className="flex gap-1">
@@ -887,7 +887,7 @@ function GalleryManagement() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {items.map((item) => (
             <div key={item.id} className="relative group rounded-xl overflow-hidden">
-              <img src={item.image_url} alt={item.title || ''} className="w-full h-32 object-cover" />
+              <img src={item.image_url} alt={item.title || ''} className="w-full h-32 object-cover" loading="lazy" />
               <button onClick={() => handleDelete(item.id)} className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-3.5 h-3.5 text-white" /></button>
               <p className="absolute bottom-1 left-2 text-white text-xs font-medium drop-shadow-lg">{item.category}</p>
             </div>
@@ -950,7 +950,7 @@ function OfferManagement() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {offers.map((o) => (
             <div key={o.id} className="card p-4 flex gap-3">
-              <img src={o.image_url || ''} alt={o.title} className="w-20 h-20 rounded-lg object-cover shrink-0" />
+              <img src={o.image_url || ''} alt={o.title} className="w-20 h-20 rounded-lg object-cover shrink-0" loading="lazy" />
               <div className="flex-1">
                 <div className="flex items-start justify-between">
                   <p className="text-white font-bold text-sm">{o.title}</p>

@@ -75,6 +75,7 @@ export default function Home() {
             src={heroImage}
             alt="Kiyaso chef cooking with flames"
             className="w-full h-full object-cover"
+            fetchPriority="high"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-charcoal-950/70 via-charcoal-950/50 to-charcoal-950" />
         </motion.div>
@@ -510,6 +511,7 @@ export default function Home() {
             src="https://images.pexels.com/photos/11923047/pexels-photo-11923047.jpeg?auto=compress&cs=tinysrgb&h=800&w=1920"
             alt="Restaurant interior"
             className="w-full h-full object-cover"
+            loading="lazy"
           />
           <div className="absolute inset-0 bg-charcoal-950/85" />
         </div>

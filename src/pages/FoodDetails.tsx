@@ -83,7 +83,7 @@ export default function FoodDetails() {
           {/* Image */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
             <div className="relative rounded-3xl overflow-hidden card">
-              <img src={item.image_url || ''} alt={item.name} className="w-full h-[400px] md:h-[500px] object-cover" />
+              <img src={item.image_url || ''} alt={item.name} className="w-full h-[400px] md:h-[500px] object-cover" fetchPriority="high" />
               <div className="absolute top-4 left-4 flex gap-2">
                 {item.is_popular && (
                   <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-600 text-white text-sm font-bold rounded-lg">
